@@ -1,61 +1,23 @@
 # app.py
 from flask import Flask, request
 from flask_restx import Api, Resource
-from flask_sqlalchemy import SQLAlchemy
-from marshmallow import Schema, fields
+from for_db import db
+from classes_of_models import Movie, Genre, Director
+from shemas_movies import movies_schema, movie_schema
 
 app = Flask(__name__)
+
+app.app_context().push()
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_AS_ASCII'] = False
 app.config['RESTX_JSON'] = {'ensure_ascii': False, 'indent': 2}
 
-db = SQLAlchemy(app)
 db.init_app(app)
 
 api = Api(app)
 movie_ns = api.namespace('movies')
-
-class Movie(db.Model):
-    __tablename__ = 'movie'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255))
-    description = db.Column(db.String(255))
-    trailer = db.Column(db.String(255))
-    year = db.Column(db.Integer)
-    rating = db.Column(db.Float)
-    genre_id = db.Column(db.Integer, db.ForeignKey("genre.id"))
-    genre = db.relationship("Genre")
-    director_id = db.Column(db.Integer, db.ForeignKey("director.id"))
-    director = db.relationship("Director")
-
-class MovieSchema(Schema):
-    id = fields.Int()
-    title = fields.Str()
-    description = fields.Str()
-    trailer = fields.Str()
-    year = fields.Int()
-    rating = fields.Float()
-    #genre_id = fields.Int()
-    genre = fields.Str()
-    #director_id = fields.Int()
-    director = fields.Str()
-
-movie_schema = MovieSchema()
-movies_schema = MovieSchema(many=True)
-
-
-class Director(db.Model):
-    __tablename__ = 'director'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-
-
-class Genre(db.Model):
-    __tablename__ = 'genre'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-
 
 @movie_ns.route("/")
 class MovieView(Resource):
@@ -85,7 +47,7 @@ class MovieView(Resource):
 
 @movie_ns.route("/<int:movie_id>")
 class MovieView(Resource):
-
+    """Представление для поиска фильма movies/#"""
     def get(self, movie_id: int):
         movie = db.session.query(Movie.id, Movie.title, Movie.description,
                                  Movie.rating, Movie.trailer,
