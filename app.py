@@ -3,7 +3,7 @@ from flask import Flask, request
 from flask_restx import Api, Resource
 from for_db import db
 from classes_of_models import Movie, Genre, Director
-from shemas_movies import movies_schema, movie_schema
+from shemas_movies import movies_schema, movie_schema, director_schema, directors_schema, genre_schema, genres_schema
 
 app = Flask(__name__)
 
@@ -18,6 +18,8 @@ db.init_app(app)
 
 api = Api(app)
 movie_ns = api.namespace('movies')
+director_ns = api.namespace('directors')
+genre_ns = api.namespace('genres')
 
 @movie_ns.route("/")
 class MovieView(Resource):
@@ -107,6 +109,53 @@ class MovieView(Resource):
         db.session.delete(movie)
         db.session.commit()
         return f"Объект с id {movie_id} удален", 204
+
+@director_ns.route("/")
+class DirectorView(Resource):
+
+    def get(self):
+        director_list = db.session.query(Director.id, Director.name)
+        director_list_all = director_list.all()
+        return directors_schema.dump(director_list_all), 200
+
+
+@director_ns.route("/<int:director_id>")
+class DirectorView(Resource):
+
+    def get(self, director_id:int):
+        movie_with_director = db.session.query(Movie.id, Movie.title, Movie.description,
+                                                         Movie.rating, Movie.trailer, Movie.genre_id, Movie.director_id,
+                                                         Genre.name.label('genre'),
+                                                         Director.name.label('director')).join(Genre).join(Director)
+        if director_id:
+            movie_with_director = movie_with_director.filter(Movie.director_id == director_id)
+
+        movies_list = movie_with_director.all()
+        return movies_schema.dump(movies_list), 200
+
+@genre_ns.route("/")
+class GenreView(Resource):
+
+    def get(self):
+        genre_list = db.session.query(Genre.id, Genre.name)
+        genres_list_all = genre_list.all()
+        return genres_schema.dump(genres_list_all), 200
+
+
+@genre_ns.route("/<int:genre_id>")
+class DirectorView(Resource):
+
+    def get(self, genre_id:int):
+        movie_with_genre = db.session.query(Movie.id, Movie.title, Movie.description,
+                                                         Movie.rating, Movie.trailer, Movie.genre_id, Movie.director_id,
+                                                         Genre.name.label('genre'),
+                                                         Director.name.label('director')).join(Genre).join(Director)
+        if genre_id:
+            movie_with_genre = movie_with_genre.filter(Movie.genre_id == genre_id)
+
+        movies_list = movie_with_genre.all()
+        return (movies_schema.dump(movies_list)), 200
+
 
 if __name__ == '__main__':
     app.run(port=910, debug=True)
